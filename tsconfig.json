@@ -1,6 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "experimentalDecorators": true
+    "module": "ESNext",
+    "experimentalDecorators": true, // Enable decorators
+    "moduleResolution": "node"
+  },
+  "ts-node": {
+    // Tell ts-node CLI to install the --loader automatically, explained below
+    "esm": true
   }
 }
