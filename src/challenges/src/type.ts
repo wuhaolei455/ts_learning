@@ -4,6 +4,9 @@
 // undefined 表示一个变量没有被赋值，未赋值类型
 type IsEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
 type IsChild<T, U> = T extends U ? true : false;
+// export type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2)
+//   ? true
+//   : false
 
 console.log(typeof null === 'object');
 console.log(typeof undefined === 'object');
@@ -24,6 +27,8 @@ type T9 = IsChild<Function, object>; // true
 
 type T10 = IsEqual<Str, never>; // false
 type T11 = IsChild<KuoHao, object>; // false
+type T12 = IsChild<(...args: any[]) => any, Function>; // true, Function ts所有可能的函数类型
+type T13 = IsEqual<(...args: any[]) => any, Function>; // false
 
 
 
