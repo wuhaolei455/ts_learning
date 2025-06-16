@@ -2,29 +2,6 @@
 // keyof, 抽取属性组成联合类型
 // typeof, 变量类型检查
 
-interface T {
-  a: number;
-  b: string;
-}
-// <-----------------------------------------------------> 类型介绍 </----------------------------------------------------->
-// 对象取值
-function pickValue1<T>(obj: T, key: string) {
-  return obj[key];
-}
-
-// 对象的类型取值
-function pickValue2<T>(obj: T, key: keyof T): T[keyof T] {
-  return obj[key]
-}
-
-const foo: T = { a: 111, b: '222' }
-console.log(pickValue1(foo, 'a'));
-console.log(typeof pickValue2(foo, 'a') === 'number');
-
-function pickValue3<T extends object, R extends keyof T>(obj: T, keys: R[]): T[R][] {
-  return keys.map(key => obj[key]);
-}
-
 // <-----------------------------------------------------> extends、keyof配合使用 </----------------------------------------------------->
 // 遍历版本
 type MyReadonly<T> = {
