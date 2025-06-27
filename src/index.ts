@@ -99,3 +99,77 @@ console.log(0x111 & 0x01)
 // }
 
 // testSameArgs(1, 2) // 2, 后面的参数覆盖前面的参数
+
+function testArguments() {
+  // arguments并不是一个真正的数组，无法使用forEach
+  // console.log('arguments', arguments.forEach((arg, index) => {
+  //   console.log(`arguments[${index}]`, arg);
+  // }));
+  console.log('forEach in arguments', 'forEach' in arguments);
+  console.log('toString in arguments', 'toString' in arguments);
+  console.log('arguments[0]', arguments[0]);
+  console.log('arguments[1]', arguments[1]);
+  for (let i = 0; i < arguments.length; i++) {
+    console.log(`arguments[${i}]`, arguments[i]);
+  }
+  let args = Array.prototype.slice.call(arguments);
+  args.forEach((arg, index) => {
+    console.log(`args[${index}]`, arg);
+  })
+}
+
+testArguments(1, 2)
+
+// testClosure
+// 1. 读取外层函数变量
+// 2. 保存上下文环境，如下累加器
+// 关于第二点的解释, 闭包对象建立在堆上引用着外层函数的变量count，导致createIncrementer无法从内存释放，一方面保存了上下文，另一方面也存在内存泄漏的风险
+// 3. 封装对象的私有属性和私有方法
+function createIncrementer() {
+  let count = 0; // 闭包变量
+  return function increment() {
+    count += 1;
+    return count;
+  };
+}
+
+let incrementer = createIncrementer();
+console.log(incrementer(), incrementer(), incrementer()); // 1 2 3
+
+function Person(name) {
+  var _age;
+  function setAge(n) {
+    _age = n;
+  }
+  function getAge() {
+    return _age;
+  }
+
+  return {
+    name: name,
+    getAge: getAge,
+    setAge: setAge
+  };
+}
+let person = Person('Alice');
+person.setAge(30);
+console.log(person.name, person.getAge()); // Alice 30
+
+// IIFE (Immediately Invoked Function Expression) 立即执行函数表达式，匿名函数
+let testIIFE = function() { return 1 }() // function既能作为表达式，也能作为函数定义语句
+console.log('testIIFE', testIIFE); // 1, 立即执行函数表达式
+// function() { return 1 }() error, 行首的function被当作函数定义语句解析
+console.log('testIIFE', (function() { return 1 })(), +function() { return 1 }()); // 1, 使用括号包裹函数表达式，立即执行函数表达式, 原理在于不让function出现在行首即可
+
+// array
+console.log(typeof [1, 2, 3]) // object
+for (let key in [1, 2, 3]) {
+  console.log('key', key); // key 0, key 1, key 2 // 数组的特殊性体现在，它的键名是按次序排列的一组整数（0，1，2...）。
+}
+console.log([1, , 3].length, [1,,3].values[1]) // 3 undefined, 代表对象中key为'1'的值是undefined
+
+// string转数组
+const strArray = Array.prototype.slice.call('hello');
+strArray.forEach((element, index) => {
+  console.log('element', index, element);
+});
