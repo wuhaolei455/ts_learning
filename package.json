@@ -20,5 +20,8 @@
   "homepage": "https://github.com/wuhaolei455/ts_learning#readme",
   "dependencies": {
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }
