@@ -19,7 +19,8 @@
   },
   "homepage": "https://github.com/wuhaolei455/ts_learning#readme",
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "ts-node": "^10.9.2"
