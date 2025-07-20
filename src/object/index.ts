@@ -58,3 +58,22 @@ console.log('y', y instanceof Array, y instanceof Object); // false, true
 // }
 // dog3.color = 'black';
 // console.log('dog3.speak === dog.speak', dog3.speak === dog.speak)
+
+// 对象拷贝
+function A(name: string) {
+  this.name = name;
+}
+var aa = new A("aa");
+aa.color = "red";
+var b = Object.create(aa);
+
+// Object.create()方法创建一个新对象，使用指定的原型对象和可选的属性来初始化
+// if (typeof Object.create !== 'function') {
+//   Object.create = function (obj) {
+//     function F() {}
+//     F.prototype = obj;
+//     return new F();
+//   };
+// }
+
+console.log('Object.create', b.constructor === A, b instanceof A, b.name, b.prototype === aa.prototype, aa == b, aa === b); // true, true
