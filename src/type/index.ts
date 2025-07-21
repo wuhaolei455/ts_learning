@@ -60,14 +60,16 @@ function testA(op, ...args) {
 console.log('testA(add)(1, 1)', testA(add)(1, 1))
 
 // fucntion定义，函数提升，导致前者才是后来覆盖的函数
-// var f = function () {
-//   console.log('1');
+fff(); 
+
+// TypeError: fff is not a function
+// var fff = function () { 
+//   console.log('fff', '1');
 // }
 
-// function f() {
-//   console.log('2');
-// }
-
+function fff() {
+  console.log('fff', '2');
+}
 
 var aa = 1
 function f() {
