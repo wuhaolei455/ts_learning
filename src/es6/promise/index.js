@@ -1,5 +1,7 @@
 import { testPromiseState } from "./src/promise.js";
 
-export function testPrimise() {
+export function testPromise() {
   testPromiseState();
 }
+
+testPromise();
