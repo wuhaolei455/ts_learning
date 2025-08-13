@@ -1,6 +1,6 @@
 // ts常见类型的关系
 // never 类型表示那些永远不会存在的值，keyof string等
-// null 空值, 是所有类型的子类型
+// null 空值, 是所有类型的子类型，可空
 // undefined 表示一个变量没有被赋值，未赋值类型
 type IsEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
 type IsChild<T, U> = T extends U ? true : false;

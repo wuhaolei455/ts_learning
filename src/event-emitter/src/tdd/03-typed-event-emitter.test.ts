@@ -15,10 +15,23 @@ interface EventMap {
   'error': { message: string; code: number };
 }
 
-// TODO: 你需要在这里实现 TypedEventEmitter 类
-class TypedEventEmitter<TEventMap extends Record<string, any> = EventMap> {
-  // TODO: 使用 Map 存储事件监听器
-  // 提示：Map<keyof TEventMap, Set<Function>>
+type MyRecord<K extends string, T> = { // 字面量联合类型
+  [k in K]: T
+}
+type Role = 'admin' | 'user' | 'guest';
+type TestRole = Role extends string ? Role : never;
+
+type Permissions = MyRecord<Role, string[]>;
+
+const userPermissions: Permissions = {
+  admin: ['create', 'read', 'update', 'delete'],
+  user: ['read'],
+  guest: [],
+};
+
+
+// TODO: 你需要在这里实现 TypedEventEmitter 类, 用于自定义EventMap，必须是key是string，值是any的类型
+class TypedEventEmitter<TEventMap extends MyRecord<string, any> = EventMap> {
   private eventMap: Map<keyof TEventMap, Set<Function>> = new Map();
   
   constructor() {
@@ -32,7 +45,10 @@ class TypedEventEmitter<TEventMap extends Record<string, any> = EventMap> {
     event: K,
     listener: (data: TEventMap[K]) => void
   ): this {
-    // TODO: 实现这个方法
+    if (!this.eventMap.has(event)) {
+      this.eventMap.set(event, new Set())
+    }
+    this.eventMap.get(event)!.add(listener)
     return this;
   }
 
@@ -42,9 +58,11 @@ class TypedEventEmitter<TEventMap extends Record<string, any> = EventMap> {
     event: K,
     listener: (data: TEventMap[K]) => void
   ): this {
-    // TODO: 实现这个方法
-    // 提示：创建一个包装函数，在执行后自动移除监听器
-    return this;
+    const onceWrapper = (data: TEventMap[K]) => {
+      listener(data);
+      this.off(event, onceWrapper);
+    }
+    return this.on(event, onceWrapper);
   }
 
   // TODO: 实现类型安全的 off 方法
@@ -53,7 +71,13 @@ class TypedEventEmitter<TEventMap extends Record<string, any> = EventMap> {
     event: K,
     listener: (data: TEventMap[K]) => void
   ): this {
-    // TODO: 实现这个方法
+    const listeners = this.eventMap.get(event);
+    if (listeners) {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        this.eventMap.delete(event);
+      }
+    }
     return this;
   }
 
@@ -64,31 +88,41 @@ class TypedEventEmitter<TEventMap extends Record<string, any> = EventMap> {
     event: K,
     data: TEventMap[K]
   ): boolean {
-    // TODO: 实现这个方法
-    // 1. 获取事件对应的监听器
-    // 2. 如果没有监听器，返回 false
-    // 3. 遍历所有监听器并调用
-    // 4. 添加错误处理
-    // 5. 返回 true
-    return false; // 占位符
+    const callbacks = this.eventMap.get(event);
+
+    const results = [];
+    let res = false
+    callbacks?.forEach((callback) => {
+      try{
+        results.push(callback(data));
+        res = true;
+      } catch (error) {
+        console.error(`Error in listener for ${event.toString()}:`, error);
+        results.push(null);
+      }
+    });
+
+    return res;
   }
 
   // TODO: 实现 listenerCount 方法
   listenerCount<K extends keyof TEventMap>(event: K): number {
-    // TODO: 实现这个方法
-    return 0; // 占位符
+    return this.eventMap.get(event)?.size || 0;
   }
 
   // TODO: 实现 removeAllListeners 方法
   removeAllListeners<K extends keyof TEventMap>(event?: K): this {
-    // TODO: 实现这个方法
+    if (event) {
+      this.eventMap.delete(event)
+    } else {
+      this.eventMap.clear()
+    }
     return this;
   }
 
   // TODO: 实现 eventNames 方法
   eventNames(): (keyof TEventMap)[] {
-    // TODO: 实现这个方法
-    return []; // 占位符
+    return Array.from(this.eventMap.keys())
   }
 }
 
@@ -165,12 +199,16 @@ export function runTypedEventEmitterTests() {
     const mock1 = createMock<(data: EventMap['data:update']) => void>();
     const mock2 = createMock<(data: EventMap['data:update']) => void>();
     
-    emitter.on('data:update', mock1.getMock());
-    emitter.on('data:update', mock2.getMock());
+    // 获取函数引用并重用
+    const listener1 = mock1.getMock();
+    const listener2 = mock2.getMock();
+    
+    emitter.on('data:update', listener1);
+    emitter.on('data:update', listener2);
     
     Assert.equal(emitter.listenerCount('data:update'), 2, '应该有2个监听器');
     
-    emitter.off('data:update', mock1.getMock());
+    emitter.off('data:update', listener1);
     
     Assert.equal(emitter.listenerCount('data:update'), 1, '应该剩余1个监听器');
     

@@ -1,7 +1,7 @@
-type Callback = (...args: any[]) => any;
-type Subscription = {
-  unsubscribe: () => void;
-};
+// type Callback = (...args: any[]) => any;
+// type Subscription = {
+//   unsubscribe: () => void;
+// };
 
 class EventEmitter {
   private eventMap: Map<string, Callback[]> = new Map();

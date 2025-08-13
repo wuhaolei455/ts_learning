@@ -31,3 +31,7 @@ interface Expected2 {
 type MyPick<T, K extends keyof T> = {
   [key in K]: T[key]
 }
+
+type NonNullable<T> = null | undefined extends T ? never : T
+let a: string | undefined = undefined
+// let b: NonNullable<typeof a> = undefined // compile type error
