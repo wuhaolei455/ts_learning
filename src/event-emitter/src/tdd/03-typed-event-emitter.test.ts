@@ -15,13 +15,16 @@ interface EventMap {
   'error': { message: string; code: number };
 }
 
-type MyRecord<K extends string, T> = { // 字面量联合类型
+type keyofAny = keyof any;
+type MyRecord<K extends keyofAny, T> = { // 字面量联合类型
   [k in K]: T
 }
 type Role = 'admin' | 'user' | 'guest';
-type TestRole = Role extends string ? Role : never;
+type TestRole = Role extends string ? Role : never
+
 
 type Permissions = MyRecord<Role, string[]>;
+type Permissions2 = Record<Role, string[]>;
 
 const userPermissions: Permissions = {
   admin: ['create', 'read', 'update', 'delete'],
