@@ -16,7 +16,7 @@ export class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEven
 
   on<K extends keyof TEventMap>(
     event: K,
-    listener: (data: TEventMap[K]) => void | Promise<void>
+    listener: (data: TEventMap[K]) => any | Promise<any>
   ): this {
     // 如果事件不存在，创建一个新的 Set
     if (!this.events.has(event)) {

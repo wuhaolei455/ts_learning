@@ -4,15 +4,18 @@ import { Assert, createMock, TestRunner } from './test-framework';
 // TODO: 定义异步事件映射接口
 interface AsyncEventMap {
   // TODO: 定义异步事件类型
-  // 提示：
-  // 'data:save': { id: string; data: any };
-  // 'file:upload': { filename: string; size: number };
-  // 'user:authenticate': { username: string; password: string };
+  'data:save': { id: string; data: any };
+  'file:upload': { filename: string; size: number };
+  'user:authenticate': { username: string; password: string };
+}
+
+function isAsyncFunction(func: Function): boolean {
+  return func instanceof Function && func[Symbol.toStringTag] === 'AsyncFunction';
 }
 
 // TODO: 你需要在这里实现 AsyncEventEmitter 类
 class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEventMap> {
-  // TODO: 存储事件监听器
+  private eventMap: Map<keyof TEventMap, Set<Function>> = new Map();
 
   constructor() {
     // TODO: 初始化
@@ -21,9 +24,12 @@ class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEventMap> {
   // TODO: 实现 on 方法，支持同步和异步监听器
   on<K extends keyof TEventMap>(
     event: K,
-    listener: (data: TEventMap[K]) => void | Promise<void>
+    listener: (data: TEventMap[K]) => any | Promise<any>
   ): this {
-    // TODO: 实现这个方法
+    if (!this.eventMap.has(event)) {
+      this.eventMap.set(event, new Set())
+    }
+    this.eventMap.get(event)!.add(listener)
     return this;
   }
 
@@ -33,12 +39,20 @@ class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEventMap> {
     event: K,
     data: TEventMap[K]
   ): Promise<any[]> {
-    // TODO: 实现这个方法
-    // 1. 获取所有监听器
-    // 2. 使用 Promise.all 并行执行
-    // 3. 处理错误，不要让单个监听器的错误影响其他监听器
-    // 4. 返回所有结果
-    return []; // 占位符
+    const listeners = this.eventMap.get(event)
+    if (!listeners || listeners.size === 0) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.all([...listeners].map((listener) => {
+      if (isAsyncFunction(listener)) {
+        return listener(data).catch((error) => {
+          console.error(`Error in listener for ${event.toString()}:`, error);
+          return null;
+        })
+      }
+      return Promise.resolve(listener(data))
+    }))
   }
 
   // TODO: 实现 emitAsyncSerial 方法 - 串行执行异步监听器
@@ -47,12 +61,23 @@ class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEventMap> {
     event: K,
     data: TEventMap[K]
   ): Promise<any[]> {
-    // TODO: 实现这个方法
-    // 1. 获取所有监听器
-    // 2. 使用 for...of 或 reduce 串行执行
-    // 3. 处理错误
-    // 4. 返回所有结果
-    return []; // 占位符
+    const listeners = this.eventMap.get(event)
+    if (!listeners || listeners.size === 0) {
+      return Promise.resolve([]);
+    }
+
+    const results = []
+    for (const listener of listeners) {
+      if (isAsyncFunction(listener)) {
+        try{
+          results.push(await listener(data));
+        } catch (error) {
+          console.error(`Error in listener for ${event.toString()}:`, error);
+          results.push(null);
+        }
+      }
+    }
+    return results
   }
 
   // TODO: 实现同步 emit 方法
@@ -60,19 +85,36 @@ class AsyncEventEmitter<TEventMap extends Record<string, any> = AsyncEventMap> {
     event: K,
     data: TEventMap[K]
   ): boolean {
-    // TODO: 实现这个方法
-    // 注意：这个方法不等待异步监听器完成
-    return false; // 占位符
+    const listeners = this.eventMap.get(event)
+    if (!listeners || listeners.size === 0) {
+      return false;
+    }
+
+    listeners?.forEach((listener) => {
+      if (isAsyncFunction(listener)) {
+        listener(data).catch((error) => {
+          console.error(`Error in listener for ${event.toString()}:`, error);
+        })
+      } else {
+        listener(data)
+      }
+    })
+    return true
   }
 
   // TODO: 实现 listenerCount 方法
   listenerCount<K extends keyof TEventMap>(event: K): number {
-    return 0; // 占位符
+    return this.eventMap.get(event)?.size || 0;
   }
 
   // TODO: 实现 removeAllListeners 方法
   removeAllListeners<K extends keyof TEventMap>(event?: K): this {
-    return this;
+    if (event) {
+      this.eventMap.delete(event)
+    } else {
+      this.eventMap.clear()
+    }
+    return this
   }
 }
 
