@@ -1,0 +1,47 @@
+{
+  "name": "typescript-promise-implementation",
+  "version": "1.0.0",
+  "description": "循序渐进的TypeScript Promise实现教程",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "demo:01": "ts-node 01-basic-promise/demo.ts",
+    "demo:02": "ts-node 02-async-promise/demo.ts",
+    "demo:03": "ts-node 03-then-chain/demo.ts",
+    "demo:04": "ts-node 04-error-handling/demo.ts",
+    "demo:05": "ts-node 05-static-methods/demo.ts",
+    "demo:06": "ts-node 06-promise-utilities/demo.ts",
+    "demo:07": "ts-node 07-promises-aplus/demo.ts",
+    "demo:all": "npm run demo:01 && npm run demo:02 && npm run demo:03 && npm run demo:04 && npm run demo:05 && npm run demo:06 && npm run demo:07",
+    "test": "ts-node test-runner.ts",
+    "test:01": "ts-node 01-basic-promise/test.ts",
+    "test:02": "ts-node 02-async-promise/test.ts",
+    "test:03": "ts-node 03-then-chain/test.ts",
+    "test:04": "ts-node 04-error-handling/test.ts",
+    "test:05": "ts-node 05-static-methods/test.ts",
+    "test:06": "ts-node 06-promise-utilities/test.ts",
+    "test:07": "ts-node 07-promises-aplus/test.ts",
+    "test:aplus": "promises-aplus-tests 07-promises-aplus/aplus-adapter.js",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "promises-aplus-tests": "^2.1.2",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "prettier": "^3.0.0"
+  },
+  "keywords": [
+    "promise",
+    "typescript",
+    "async",
+    "tutorial",
+    "implementation"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

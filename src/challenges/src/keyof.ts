@@ -1,0 +1,15 @@
+type KeyOfNumber = keyof number
+type KeyOfString = keyof string
+type KeyOfBoolean = keyof boolean
+type KeyOfObject = keyof object
+type KeyOfFunction = keyof Function
+type KeyOfArray = keyof Array<number>
+type KeyOfDate = keyof Date
+type KeyOfRegExp = keyof RegExp
+type KeyOfBigInt = keyof bigint
+type KeyOfNull = keyof null
+type KeyOfUndefined = keyof undefined
+type KeyOfNever = keyof never
+type KeyOfAny = keyof any
+type KeyOfUnknown = keyof unknown
+type KeyofNumberArray = keyof number[]
