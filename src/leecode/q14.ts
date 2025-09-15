@@ -26,7 +26,7 @@ function curry(fn: Function): Function {
 }
 
 // origin
-function add(x, y, z) {
+function add2(x, y, z) {
   return x + y + z;
 }
 // 容易理解的版本
