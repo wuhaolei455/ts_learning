@@ -45,33 +45,34 @@ async function timeSlicedWorkWithRAF(tasks = [], options = { timeout: 17 }) {
   requestIdleCallback(handleTask, options);
 }
 
+/**
+ * generator实现的基础版本
+ */
 async function timeSlicedWorkWithIdle(tasks = [], options = { timeout: 17 }) {
-  function* taskGenerator() {
+  function* TaskGenerator() {
     for (const task of tasks) {
       yield task;
     }
   }
-
-  const generator = taskGenerator();
-
+  const generator = TaskGenerator();
   function handleTask(deadline: IdleDeadline) {
     try {
-      // 在时间切片内执行任务，遇到yield暂停
       while ((deadline.timeRemaining() > 0 || deadline.didTimeout)) {
         const result = generator.next();
         if (result.done) {
-          return;
+          break;
         }
         const task = result.value;
         task();
       }
     } catch (e) {
       console.error('Error executing task:', e);
+    } finally {
+      requestAnimationFrame(() => {
+        requestIdleCallback(handleTask, options);
+      });
     }
-    // 如果还有任务，继续用requestIdleCallback调度下一次执行
-    requestIdleCallback(handleTask, options);
   }
-
   requestIdleCallback(handleTask, options);
 }
 
