@@ -1,4 +1,5 @@
-import { createEventEmitter, EventEmitter, EventHandler } from "./emitter";
+import { createEventEmitter, EventEmitter, EventHandler } from "holly-emitter";
+
 
 export function machine<T extends Config>(config: T, options: Options<T>) {
   const { emitter = createEventEmitter<Events<T>>(), initialState } = options;

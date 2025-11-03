@@ -1,4 +1,5 @@
-import { machine } from "./machine";
+// import { machine } from "./machine";
+import { createMachine } from "holly-fsm";
 
 const lightSwitch = {
   off: {
@@ -21,7 +22,7 @@ const lightSwitch = {
 
 // 创建状态机实例
 // 注意：机器会动态生成方法（如 switchOn, switchOff 等）和状态监听器（如 onOff, onOn 等）
-const lightMachine = machine(lightSwitch, {
+const lightMachine = createMachine(lightSwitch, {
   initialState: "off",
 });
 
@@ -43,13 +44,13 @@ const unsubscribeExit = lightMachine.onExit((event) => {
 });
 
 // 4. 监听特定状态的进入事件（使用动态生成的方法）
-const unsubscribeOnOff = lightMachine.onOff((event) => {
-  console.log(`[off状态监听器] 进入了off状态`);
-});
+// const unsubscribeOnOff = lightMachine.onOff((event) => {
+//   console.log(`[off状态监听器] 进入了off状态`);
+// });
 
-const unsubscribeOnOn = lightMachine.onOn((event) => {
-  console.log(`[on状态监听器] 进入了on状态`);
-});
+// const unsubscribeOnOn = lightMachine.onOn((event) => {
+//   console.log(`[on状态监听器] 进入了on状态`);
+// });
 
 // 5. 使用 transition 方法进行状态转换
 // console.log("\n2. 使用 transition 方法:");
@@ -108,8 +109,6 @@ setTimeout(() => {
     .then(() => {
       unsubscribeEnter();
       unsubscribeExit();
-      unsubscribeOnOff();
-      unsubscribeOnOn();
       console.log(`   当前状态: ${lightMachine.getState()}`);
       console.log("\n=== 示例完成 ===");
     });
