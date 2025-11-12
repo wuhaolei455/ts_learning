@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通知中心 - 长轮询Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: #333;
+    }
+
+    .notification-badge {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .bell-icon {
+      font-size: 32px;
+      animation: ring 4s ease-in-out infinite;
+    }
+
+    @keyframes ring {
+      0%, 90%, 100% {
+        transform: rotate(0deg);
+      }
+      92%, 96% {
+        transform: rotate(15deg);
+      }
+      94%, 98% {
+        transform: rotate(-15deg);
+      }
+    }
+
+    .badge-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #f56565;
+      color: white;
+      border-radius: 10px;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 20px;
+      text-align: center;
+      animation: bounce 0.5s ease;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+    }
+
+    .controls {
+      background: white;
+      padding: 20px 30px;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #48bb78;
+      animation: pulse-status 2s infinite;
+    }
+
+    @keyframes pulse-status {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+
+    .notifications-list {
+      background: white;
+      border-radius: 0 0 20px 20px;
+      max-height: 600px;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    .notification-item {
+      padding: 20px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      gap: 15px;
+      align-items: start;
+      cursor: pointer;
+      transition: background 0.3s;
+      animation: slideDown 0.5s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+        max-height: 0;
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+      }
+    }
+
+    .notification-item:hover {
+      background: #f8f9fa;
+    }
+
+    .notification-item.unread {
+      background: #f0f4ff;
+    }
+
+    .notification-item.unread::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #667eea;
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .notification-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .notification-text {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .notification-meta {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .notification-time {
+      color: #999;
+      font-size: 12px;
+    }
+
+    .notification-action {
+      color: #667eea;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      padding: 60px 30px;
+      text-align: center;
+      color: #999;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .stats {
+      background: white;
+      padding: 20px 30px;
+      margin-bottom: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-number" id="totalCount">0</div>
+        <div class="stat-label">总通知</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="unreadCount">0</div>
+        <div class="stat-label">未读</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="pollCount">0</div>
+        <div class="stat-label">轮询次数</div>
+      </div>
+    </div>
+
+    <div class="header">
+      <h1>🔔 通知中心</h1>
+      <div class="notification-badge">
+        <div class="bell-icon">🔔</div>
+        <div class="badge-count" id="badgeCount">0</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">长轮询监听中</span>
+      </div>
+      <button class="btn btn-secondary" id="markAllRead">全部已读</button>
+      <button class="btn btn-secondary" id="clearAll">清空</button>
+    </div>
+
+    <div class="notifications-list" id="notificationsList">
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>暂无通知</p>
+        <p style="font-size: 12px; margin-top: 10px; color: #bbb;">
+          系统会通过长轮询自动推送新通知
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 模拟通知服务器 =====
+    class NotificationServer {
+      constructor() {
+        this.notifications = [];
+        this.notificationTypes = [
+          { icon: '👍', title: '收到新点赞', getText: () => `${this.randomUser()}赞了你的动态` },
+          { icon: '💬', title: '新评论', getText: () => `${this.randomUser()}评论了你的文章` },
+          { icon: '👥', title: '新粉丝', getText: () => `${this.randomUser()}关注了你` },
+          { icon: '❤️', title: '获得喜欢', getText: () => `${this.randomUser()}喜欢了你的作品` },
+          { icon: '📢', title: '系统通知', getText: () => '您有新的系统消息，请查看' },
+          { icon: '🎁', title: '活动提醒', getText: () => '您关注的活动即将开始' },
+          { icon: '💰', title: '收益提醒', getText: () => `您获得了 ${Math.floor(Math.random() * 100)} 积分奖励` },
+          { icon: '📦', title: '物流更新', getText: () => '您的包裹已发货，正在配送中' },
+        ];
+        this.userNames = ['小明', '小红', '张三', '李四', '王五', '赵六', '小美', '小刚'];
+      }
+
+      randomUser() {
+        return this.userNames[Math.floor(Math.random() * this.userNames.length)];
+      }
+
+      // 自动生成随机通知
+      startAutoGenerate() {
+        setInterval(() => {
+          // 30%概率生成新通知
+          if (Math.random() < 0.3) {
+            this.generateNotification();
+          }
+        }, 3000); // 每3秒检查一次
+      }
+
+      generateNotification() {
+        const type = this.notificationTypes[Math.floor(Math.random() * this.notificationTypes.length)];
+        const notification = {
+          id: Date.now() + Math.random(),
+          icon: type.icon,
+          title: type.title,
+          text: type.getText(),
+          time: new Date().toLocaleTimeString(),
+          unread: true,
+          timestamp: Date.now()
+        };
+        
+        this.notifications.push(notification);
+        console.log('[服务器] 生成新通知:', notification);
+      }
+
+      // 长轮询接口：等待新通知
+      async pollNotifications(lastTimestamp) {
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            // 查找新通知
+            const newNotifications = this.notifications.filter(n => n.timestamp > lastTimestamp);
+            
+            if (newNotifications.length > 0) {
+              clearInterval(checkInterval);
+              resolve({
+                hasUpdate: true,
+                notifications: newNotifications.sort((a, b) => b.timestamp - a.timestamp)
+              });
+            }
+          }, 500);
+
+          // 30秒超时
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve({
+              hasUpdate: false,
+              notifications: []
+            });
+          }, 30000);
+        });
+      }
+
+      markAsRead(notificationId) {
+        const notification = this.notifications.find(n => n.id === notificationId);
+        if (notification) {
+          notification.unread = false;
+        }
+      }
+
+      markAllAsRead() {
+        this.notifications.forEach(n => n.unread = false);
+      }
+
+      clearAll() {
+        this.notifications = [];
+      }
+    }
+
+    // ===== 前端客户端 =====
+    class NotificationClient {
+      constructor() {
+        this.server = new NotificationServer();
+        this.lastTimestamp = Date.now();
+        this.isPolling = false;
+        this.pollCount = 0;
+        this.notifications = [];
+        
+        this.initUI();
+        this.startLongPolling();
+        this.server.startAutoGenerate();
+      }
+
+      initUI() {
+        document.getElementById('markAllRead').addEventListener('click', () => this.markAllAsRead());
+        document.getElementById('clearAll').addEventListener('click', () => this.clearAll());
+      }
+
+      async startLongPolling() {
+        this.isPolling = true;
+        
+        while (this.isPolling) {
+          try {
+            this.pollCount++;
+            this.updateStats();
+            
+            console.log(`[长轮询 #${this.pollCount}] 等待新通知...`, new Date().toLocaleTimeString());
+            this.updateStatus('监听中...', true);
+            
+            // 模拟网络延迟
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // 调用长轮询接口
+            const response = await this.server.pollNotifications(this.lastTimestamp);
+            
+            if (response.hasUpdate && response.notifications.length > 0) {
+              console.log('[长轮询] 收到新通知:', response.notifications);
+              this.updateStatus('收到新通知 ✓', true);
+              
+              // 显示新通知
+              for (const notification of response.notifications) {
+                this.addNotification(notification);
+                this.lastTimestamp = Math.max(this.lastTimestamp, notification.timestamp);
+                
+                // 显示浏览器原生通知
+                this.showBrowserNotification(notification);
+              }
+              
+              this.updateStats();
+            } else {
+              console.log('[长轮询] 超时，重新连接...');
+              this.updateStatus('重连中...', true);
+            }
+          } catch (error) {
+            console.error('[长轮询] 错误:', error);
+            this.updateStatus('连接失败', false);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+
+      addNotification(notification) {
+        this.notifications.unshift(notification);
+        
+        const listContainer = document.getElementById('notificationsList');
+        
+        // 移除空状态
+        const emptyState = listContainer.querySelector('.empty-state');
+        if (emptyState) {
+          emptyState.remove();
+        }
+        
+        // 创建通知元素
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'notification-item unread';
+        notificationDiv.dataset.id = notification.id;
+        notificationDiv.innerHTML = `
+          <div class="notification-icon">${notification.icon}</div>
+          <div class="notification-content">
+            <div class="notification-title">${notification.title}</div>
+            <div class="notification-text">${notification.text}</div>
+            <div class="notification-meta">
+              <span class="notification-time">${notification.time}</span>
+              <span class="notification-action">标记已读</span>
+            </div>
+          </div>
+        `;
+        
+        notificationDiv.addEventListener('click', () => {
+          this.markAsRead(notification.id);
+        });
+        
+        listContainer.insertBefore(notificationDiv, listContainer.firstChild);
+      }
+
+      markAsRead(notificationId) {
+        const element = document.querySelector(`[data-id="${notificationId}"]`);
+        if (element) {
+          element.classList.remove('unread');
+        }
+        
+        const notification = this.notifications.find(n => n.id === notificationId);
+        if (notification) {
+          notification.unread = false;
+        }
+        
+        this.server.markAsRead(notificationId);
+        this.updateStats();
+      }
+
+      markAllAsRead() {
+        document.querySelectorAll('.notification-item').forEach(el => {
+          el.classList.remove('unread');
+        });
+        
+        this.notifications.forEach(n => n.unread = false);
+        this.server.markAllAsRead();
+        this.updateStats();
+      }
+
+      clearAll() {
+        const listContainer = document.getElementById('notificationsList');
+        listContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>暂无通知</p>
+          </div>
+        `;
+        
+        this.notifications = [];
+        this.server.clearAll();
+        this.updateStats();
+      }
+
+      updateStats() {
+        const unreadCount = this.notifications.filter(n => n.unread).length;
+        
+        document.getElementById('totalCount').textContent = this.notifications.length;
+        document.getElementById('unreadCount').textContent = unreadCount;
+        document.getElementById('pollCount').textContent = this.pollCount;
+        document.getElementById('badgeCount').textContent = unreadCount;
+      }
+
+      updateStatus(text, isConnected) {
+        document.getElementById('statusText').textContent = text;
+        const dot = document.getElementById('statusDot');
+        dot.style.background = isConnected ? '#48bb78' : '#f56565';
+      }
+
+      // 显示浏览器原生通知
+      async showBrowserNotification(notification) {
+        if (!('Notification' in window)) return;
+        
+        if (Notification.permission === 'granted') {
+          new Notification(notification.title, {
+            body: notification.text,
+            icon: '🔔'
+          });
+        } else if (Notification.permission !== 'denied') {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            new Notification(notification.title, {
+              body: notification.text,
+              icon: '🔔'
+            });
+          }
+        }
+      }
+    }
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      new NotificationClient();
+    });
+  </script>
+</body>
+</html>
+

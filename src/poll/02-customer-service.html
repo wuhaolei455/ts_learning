@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在线客服系统 - 长轮询Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 500px;
+      height: 700px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .header-text h2 {
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+
+    .status {
+      font-size: 12px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #48bb78;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .connection-status {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #f8f9fa;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #667eea;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+      background: #48bb78;
+    }
+
+    .message-content {
+      max-width: 70%;
+    }
+
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      word-wrap: break-word;
+    }
+
+    .message.user .message-bubble {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+      padding: 0 8px;
+    }
+
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 18px;
+      width: fit-content;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .typing-indicator.active {
+      display: block;
+    }
+
+    .typing-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #999;
+      margin: 0 2px;
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+      }
+      30% {
+        transform: translateY(-10px);
+        opacity: 1;
+      }
+    }
+
+    .chat-input {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 25px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-field:focus {
+      border-color: #667eea;
+    }
+
+    .send-btn {
+      width: 50px;
+      height: 50px;
+      border: none;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .quick-replies {
+      padding: 10px 20px;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .quick-reply-btn {
+      padding: 8px 16px;
+      border: 1px solid #667eea;
+      border-radius: 20px;
+      background: white;
+      color: #667eea;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s;
+    }
+
+    .quick-reply-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="header-info">
+        <div class="avatar">👨‍💼</div>
+        <div class="header-text">
+          <h2>客服小智</h2>
+          <div class="status">
+            <span class="status-dot"></span>
+            <span>在线</span>
+          </div>
+        </div>
+      </div>
+      <div class="connection-status" id="connectionStatus">长轮询中</div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="message">
+        <div class="message-avatar">👨‍💼</div>
+        <div class="message-content">
+          <div class="message-bubble">
+            您好！我是客服小智，很高兴为您服务。有什么可以帮助您的吗？
+          </div>
+          <div class="message-time"></div>
+        </div>
+      </div>
+      <div class="message" style="display: flex; gap: 10px;">
+        <div class="message-avatar">👨‍💼</div>
+        <div class="typing-indicator" id="typingIndicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-replies">
+      <button class="quick-reply-btn" onclick="sendQuickReply('查询订单')">📦 查询订单</button>
+      <button class="quick-reply-btn" onclick="sendQuickReply('退款问题')">💰 退款问题</button>
+      <button class="quick-reply-btn" onclick="sendQuickReply('物流查询')">🚚 物流查询</button>
+      <button class="quick-reply-btn" onclick="sendQuickReply('商品咨询')">🛍️ 商品咨询</button>
+    </div>
+
+    <div class="chat-input">
+      <input 
+        type="text" 
+        class="input-field" 
+        id="messageInput" 
+        placeholder="输入消息..."
+        onkeypress="handleKeyPress(event)"
+      >
+      <button class="send-btn" onclick="sendMessage()">📤</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== 模拟客服后端 =====
+    class CustomerServiceServer {
+      constructor() {
+        this.messageQueue = [];
+        this.autoReplyTemplates = {
+          '查询订单': '好的，请提供您的订单号，我帮您查询订单状态。',
+          '退款问题': '关于退款，请问您是要申请退款还是查询退款进度呢？',
+          '物流查询': '好的，请提供订单号，我帮您查询物流信息。',
+          '商品咨询': '请问您想咨询哪个商品呢？可以提供商品名称或链接。',
+          'default': [
+            '我理解您的问题了，让我为您处理...',
+            '好的，我马上为您查询相关信息。',
+            '感谢您的反馈，我会尽快帮您解决。',
+            '收到！正在为您核实信息...'
+          ]
+        };
+      }
+
+      // 模拟接收用户消息并自动回复
+      receiveMessage(userMessage) {
+        // 模拟思考时间
+        setTimeout(() => {
+          const reply = this.generateReply(userMessage);
+          this.messageQueue.push({
+            id: Date.now(),
+            text: reply,
+            time: new Date().toLocaleTimeString(),
+            from: 'service'
+          });
+        }, Math.random() * 2000 + 1000); // 1-3秒随机延迟
+      }
+
+      generateReply(userMessage) {
+        // 检查是否有预设回复
+        if (this.autoReplyTemplates[userMessage]) {
+          return this.autoReplyTemplates[userMessage];
+        }
+
+        // 随机返回默认回复
+        const defaultReplies = this.autoReplyTemplates.default;
+        return defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
+      }
+
+      // 长轮询接口：等待新消息
+      async pollNewMessages(lastMessageId) {
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            // 查找新消息
+            const newMessages = this.messageQueue.filter(msg => msg.id > lastMessageId);
+            
+            if (newMessages.length > 0) {
+              clearInterval(checkInterval);
+              resolve({
+                hasUpdate: true,
+                messages: newMessages
+              });
+            }
+          }, 500);
+
+          // 30秒超时
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve({
+              hasUpdate: false,
+              messages: []
+            });
+          }, 30000);
+        });
+      }
+
+      // 模拟随机发送客服主动消息（可选功能）
+      startRandomMessages() {
+        const proactiveMessages = [
+          '如果您有任何问题，随时可以问我哦！',
+          '我们最近推出了新的优惠活动，需要了解吗？',
+          '您的问题解决了吗？还有什么需要帮助的吗？'
+        ];
+
+        setInterval(() => {
+          if (Math.random() < 0.1) { // 10%概率发送主动消息
+            this.messageQueue.push({
+              id: Date.now(),
+              text: proactiveMessages[Math.floor(Math.random() * proactiveMessages.length)],
+              time: new Date().toLocaleTimeString(),
+              from: 'service'
+            });
+          }
+        }, 10000); // 每10秒检查一次
+      }
+    }
+
+    // ===== 前端客户端 =====
+    class ChatClient {
+      constructor() {
+        this.server = new CustomerServiceServer();
+        this.lastMessageId = 0;
+        this.isPolling = false;
+        
+        this.initUI();
+        this.startLongPolling();
+        
+        // 可选：启动服务器随机消息
+        // this.server.startRandomMessages();
+      }
+
+      initUI() {
+        const messages = document.querySelectorAll('.message-time');
+        messages.forEach(el => {
+          el.textContent = new Date().toLocaleTimeString();
+        });
+      }
+
+      async startLongPolling() {
+        this.isPolling = true;
+        
+        while (this.isPolling) {
+          try {
+            console.log('[长轮询] 等待新消息...', new Date().toLocaleTimeString());
+            this.updateConnectionStatus('等待中...');
+            
+            // 模拟网络延迟
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // 调用长轮询接口
+            const response = await this.server.pollNewMessages(this.lastMessageId);
+            
+            if (response.hasUpdate && response.messages.length > 0) {
+              console.log('[长轮询] 收到新消息:', response.messages);
+              this.updateConnectionStatus('已连接 ✓');
+              
+              for (const message of response.messages) {
+                await this.displayServiceMessage(message.text, message.time);
+                this.lastMessageId = Math.max(this.lastMessageId, message.id);
+              }
+            } else {
+              console.log('[长轮询] 超时，重新连接...');
+              this.updateConnectionStatus('重连中...');
+            }
+          } catch (error) {
+            console.error('[长轮询] 错误:', error);
+            this.updateConnectionStatus('连接失败');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+
+      async displayServiceMessage(text, time) {
+        // 显示正在输入指示器
+        const typingIndicator = document.getElementById('typingIndicator');
+        typingIndicator.classList.add('active');
+        
+        // 模拟打字延迟
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        typingIndicator.classList.remove('active');
+        
+        // 添加消息
+        this.addMessage(text, 'service', time);
+      }
+
+      addMessage(text, from, time) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${from === 'user' ? 'user' : ''}`;
+        
+        const avatar = from === 'user' ? '👤' : '👨‍💼';
+        time = time || new Date().toLocaleTimeString();
+        
+        messageDiv.innerHTML = `
+          <div class="message-avatar">${avatar}</div>
+          <div class="message-content">
+            <div class="message-bubble">${text}</div>
+            <div class="message-time">${time}</div>
+          </div>
+        `;
+        
+        // 在输入指示器之前插入
+        const typingIndicatorParent = document.getElementById('typingIndicator').parentElement;
+        messagesContainer.insertBefore(messageDiv, typingIndicatorParent);
+        
+        // 滚动到底部
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      sendMessage(text) {
+        if (!text || !text.trim()) return;
+        
+        // 显示用户消息
+        this.addMessage(text, 'user');
+        
+        // 发送到服务器
+        this.server.receiveMessage(text);
+        
+        // 清空输入框
+        document.getElementById('messageInput').value = '';
+      }
+
+      updateConnectionStatus(status) {
+        document.getElementById('connectionStatus').textContent = status;
+      }
+    }
+
+    // 全局函数
+    let chatClient;
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      chatClient.sendMessage(input.value);
+    }
+
+    function sendQuickReply(text) {
+      chatClient.sendMessage(text);
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      chatClient = new ChatClient();
+    });
+  </script>
+</body>
+</html>
+
